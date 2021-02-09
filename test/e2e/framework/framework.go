@@ -21,14 +21,23 @@ import (
 	"github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/submariner-io/shipyard/test/e2e/framework"
+	"github.com/submariner-io/submariner/pkg/client/clientset/versioned/scheme"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 
 	submarinerv1 "github.com/submariner-io/submariner/pkg/apis/submariner.io/v1"
 	submarinerClientset "github.com/submariner-io/submariner/pkg/client/clientset/versioned"
 	"github.com/submariner-io/submariner/pkg/client/informers/externalversions"
 )
+
+var gatewayGVR = &schema.GroupVersionResource{
+	Group:    "submariner.io",
+	Version:  "v1",
+	Resource: "gateways",
+}
 
 // Framework supports common operations used by e2e tests; it will keep a client & a namespace for you.
 type Framework struct {
@@ -59,10 +68,10 @@ func beforeSuite() {
 	framework.DetectGlobalnet()
 }
 
-func (f *Framework) AwaitGatewayWithStatus(cluster framework.ClusterIndex,
-	name string, status submarinerv1.HAStatus) *submarinerv1.Gateway {
-	gwClient := SubmarinerClients[cluster].SubmarinerV1().Gateways(framework.TestContext.SubmarinerNamespace)
-	gw := framework.AwaitUntil(fmt.Sprintf("await Gateway on %q with status %q", name, status),
+func (f *Framework) awaitGatewayWithStatus(cluster framework.ClusterIndex,
+	name, status string) *unstructured.Unstructured {
+	gwClient := framework.DynClients[cluster].Resource(*gatewayGVR).Namespace(framework.TestContext.SubmarinerNamespace)
+	obj := framework.AwaitUntil(fmt.Sprintf("await Gateway on %q with status %q", name, status),
 		func() (interface{}, error) {
 			resGw, err := gwClient.Get(name, metav1.GetOptions{})
 			if apierrors.IsNotFound(err) {
@@ -74,25 +83,48 @@ func (f *Framework) AwaitGatewayWithStatus(cluster framework.ClusterIndex,
 			if result == nil {
 				return false, "gateway not found yet", nil
 			}
-			gw := result.(*submarinerv1.Gateway)
-			if gw.Status.HAStatus != status {
+
+			gw := result.(*unstructured.Unstructured)
+			haStatus := NestedString(gw.Object, "status", "haStatus")
+			if haStatus != status {
 				return false, "", fmt.Errorf("Gateway %q exists but has wrong status %q, expected %q",
-					gw.Name, gw.Status.HAStatus, status)
+					gw.GetName(), haStatus, status)
 			}
 			return true, "", nil
 		})
 
-	return gw.(*submarinerv1.Gateway)
+	return obj.(*unstructured.Unstructured)
 }
 
-func (f *Framework) AwaitGatewaysWithStatus(
-	cluster framework.ClusterIndex, status submarinerv1.HAStatus) []submarinerv1.Gateway {
+func (f *Framework) AwaitGatewayWithStatus(cluster framework.ClusterIndex,
+	name string, status submarinerv1.HAStatus) *submarinerv1.Gateway {
+	return toGateway(f.awaitGatewayWithStatus(cluster, name, string(status)))
+}
+
+func toGateway(from *unstructured.Unstructured) *submarinerv1.Gateway {
+	to := &submarinerv1.Gateway{}
+	Expect(scheme.Scheme.Convert(from, to, nil)).To(Succeed())
+
+	return to
+}
+
+func toGateways(from []unstructured.Unstructured) []submarinerv1.Gateway {
+	gateways := make([]submarinerv1.Gateway, len(from))
+	for i := range from {
+		gateways[i] = *toGateway(&from[i])
+	}
+
+	return gateways
+}
+
+func (f *Framework) awaitGatewaysWithStatus(
+	cluster framework.ClusterIndex, status string) []unstructured.Unstructured {
 	gwList := framework.AwaitUntil(fmt.Sprintf("await Gateways with status %q", status),
 		func() (interface{}, error) {
-			return f.GetGatewaysWithHAStatus(cluster, status), nil
+			return f.getGatewaysWithHAStatus(cluster, status), nil
 		},
 		func(result interface{}) (bool, string, error) {
-			gateways := result.([]submarinerv1.Gateway)
+			gateways := result.([]unstructured.Unstructured)
 			if len(gateways) == 0 {
 				return false, "no gateway found yet", nil
 			}
@@ -100,11 +132,16 @@ func (f *Framework) AwaitGatewaysWithStatus(
 			return true, "", nil
 		})
 
-	return gwList.([]submarinerv1.Gateway)
+	return gwList.([]unstructured.Unstructured)
+}
+
+func (f *Framework) AwaitGatewaysWithStatus(
+	cluster framework.ClusterIndex, status submarinerv1.HAStatus) []submarinerv1.Gateway {
+	return toGateways(f.awaitGatewaysWithStatus(cluster, string(status)))
 }
 
 func (f *Framework) AwaitGatewayRemoved(cluster framework.ClusterIndex, name string) {
-	gwClient := SubmarinerClients[cluster].SubmarinerV1().Gateways(framework.TestContext.SubmarinerNamespace)
+	gwClient := framework.DynClients[cluster].Resource(*gatewayGVR).Namespace(framework.TestContext.SubmarinerNamespace)
 	framework.AwaitUntil(fmt.Sprintf("await Gateway on %q removed", name),
 		func() (interface{}, error) {
 			_, err := gwClient.Get(name, metav1.GetOptions{})
@@ -119,8 +156,15 @@ func (f *Framework) AwaitGatewayRemoved(cluster framework.ClusterIndex, name str
 		})
 }
 
-func (f *Framework) AwaitGatewayFullyConnected(cluster framework.ClusterIndex, name string) *submarinerv1.Gateway {
-	gwClient := SubmarinerClients[cluster].SubmarinerV1().Gateways(framework.TestContext.SubmarinerNamespace)
+func NestedString(obj map[string]interface{}, fields ...string) string {
+	str, _, err := unstructured.NestedString(obj, fields...)
+	Expect(err).To(Succeed())
+
+	return str
+}
+
+func (f *Framework) awaitGatewayFullyConnected(cluster framework.ClusterIndex, name string) *unstructured.Unstructured {
+	gwClient := framework.DynClients[cluster].Resource(*gatewayGVR).Namespace(framework.TestContext.SubmarinerNamespace)
 	gw := framework.AwaitUntil(fmt.Sprintf("await Gateway on %q with status active and connections UP", name),
 		func() (interface{}, error) {
 			resGw, err := gwClient.Get(name, metav1.GetOptions{})
@@ -133,33 +177,44 @@ func (f *Framework) AwaitGatewayFullyConnected(cluster framework.ClusterIndex, n
 			if result == nil {
 				return false, "gateway not found yet", nil
 			}
-			gw := result.(*submarinerv1.Gateway)
-			if gw.Status.HAStatus != submarinerv1.HAStatusActive {
+
+			gw := result.(*unstructured.Unstructured)
+			haStatus := NestedString(gw.Object, "status", "haStatus")
+			if haStatus != "active" {
 				return false, fmt.Sprintf("Gateway %q exists but not active yet",
-					gw.Name), nil
+					gw.GetName()), nil
 			}
-			if len(gw.Status.Connections) == 0 {
+
+			connections, _, _ := unstructured.NestedSlice(gw.Object, "status", "connections")
+			if len(connections) == 0 {
 				return false, fmt.Sprintf("Gateway %q is active but has no connections yet", name), nil
 			}
-			for _, conn := range gw.Status.Connections {
-				if conn.Status != submarinerv1.Connected {
+
+			for _, o := range connections {
+				conn := o.(map[string]interface{})
+				status, _, _ := unstructured.NestedString(conn, "status")
+				if status != "connected" {
 					return false, fmt.Sprintf("Gateway %q is active but cluster %q is not connected: Status: %q, Message: %q",
-						name, conn.Endpoint.ClusterID, conn.Status, conn.StatusMessage), nil
+						name, NestedString(conn, "endpoint", "cluster_id"), status, NestedString(conn, "statusMessage")), nil
 				}
 			}
 
 			return true, "", nil
 		})
 
-	return gw.(*submarinerv1.Gateway)
+	return gw.(*unstructured.Unstructured)
+}
+
+func (f *Framework) AwaitGatewayFullyConnected(cluster framework.ClusterIndex, name string) *submarinerv1.Gateway {
+	return toGateway(f.awaitGatewayFullyConnected(cluster, name))
 }
 
 // GatewayCleanup ensures that only the active gateway node is flagged as gateway node
 //                which could not be after a failed test which left the system on an
 //                unexpected state
 func (f *Framework) GatewayCleanup() {
-	for cluster := range SubmarinerClients {
-		passiveGateways := f.GetGatewaysWithHAStatus(framework.ClusterIndex(cluster), submarinerv1.HAStatusPassive)
+	for cluster := range framework.DynClients {
+		passiveGateways := f.getGatewaysWithHAStatus(framework.ClusterIndex(cluster), "passive")
 
 		if len(passiveGateways) == 0 {
 			continue
@@ -168,28 +223,28 @@ func (f *Framework) GatewayCleanup() {
 		ginkgo.By(fmt.Sprintf("Cleaning up any non-active gateways: %v", gatewayNames(passiveGateways)))
 
 		for _, nonActiveGw := range passiveGateways {
-			f.SetGatewayLabelOnNode(framework.ClusterIndex(cluster), nonActiveGw.Name, false)
-			f.AwaitGatewayRemoved(framework.ClusterIndex(cluster), nonActiveGw.Name)
+			f.SetGatewayLabelOnNode(framework.ClusterIndex(cluster), nonActiveGw.GetName(), false)
+			f.AwaitGatewayRemoved(framework.ClusterIndex(cluster), nonActiveGw.GetName())
 		}
 	}
 }
 
-func gatewayNames(gateways []submarinerv1.Gateway) []string {
+func gatewayNames(gateways []unstructured.Unstructured) []string {
 	names := []string{}
 	for _, gw := range gateways {
-		names = append(names, gw.Name)
+		names = append(names, gw.GetName())
 	}
 
 	return names
 }
 
-func (f *Framework) GetGatewaysWithHAStatus(
-	cluster framework.ClusterIndex, status submarinerv1.HAStatus) []submarinerv1.Gateway {
-	gatewayClient := SubmarinerClients[cluster].SubmarinerV1().Gateways(
-		framework.TestContext.SubmarinerNamespace)
-	gwList, err := gatewayClient.List(metav1.ListOptions{})
+func (f *Framework) getGatewaysWithHAStatus(
+	cluster framework.ClusterIndex, status string) []unstructured.Unstructured {
+	gwClient := framework.DynClients[cluster].Resource(*gatewayGVR).Namespace(framework.TestContext.SubmarinerNamespace)
+	gwList, err := gwClient.List(metav1.ListOptions{})
 
-	filteredGateways := []submarinerv1.Gateway{}
+	filteredGateways := []unstructured.Unstructured{}
+
 	// List will return "NotFound" if the CRD is not registered in the specific cluster (broker-only)
 	if apierrors.IsNotFound(err) {
 		return filteredGateways
@@ -198,12 +253,18 @@ func (f *Framework) GetGatewaysWithHAStatus(
 	Expect(err).NotTo(HaveOccurred())
 
 	for _, gw := range gwList.Items {
-		if gw.Status.HAStatus == status {
+		haStatus := NestedString(gw.Object, "status", "haStatus")
+		if haStatus == status {
 			filteredGateways = append(filteredGateways, gw)
 		}
 	}
 
 	return filteredGateways
+}
+
+func (f *Framework) GetGatewaysWithHAStatus(
+	cluster framework.ClusterIndex, status submarinerv1.HAStatus) []submarinerv1.Gateway {
+	return toGateways(f.getGatewaysWithHAStatus(cluster, string(status)))
 }
 
 func (f *Framework) DeleteGateway(cluster framework.ClusterIndex, name string) {
