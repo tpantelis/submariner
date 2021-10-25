@@ -122,6 +122,7 @@ func (c *serviceExportController) process(from runtime.Object, numRequeues int, 
 		return c.onCreate(serviceExport)
 	case syncer.Delete:
 		return c.onDelete(serviceExport)
+	case syncer.Update:
 	}
 
 	return nil, false
