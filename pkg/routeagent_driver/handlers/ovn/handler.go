@@ -87,7 +87,7 @@ func (ovn *Handler) LocalEndpointCreated(endpoint *submV1.Endpoint) error {
 
 	// TODO: this logic belongs to the cabledrivers instead
 	if endpoint.Spec.Backend == "wireguard" {
-		//NOTE: This assumes that LocalEndpointCreated happens before than TransitionToGatewayNode
+		// NOTE: This assumes that LocalEndpointCreated happens before than TransitionToGatewayNode
 		if routingInterface, err = net.InterfaceByName(wireguard.DefaultDeviceName); err != nil {
 			return errors.Wrapf(err, "Wireguard interface %s not found on the node.", wireguard.DefaultDeviceName)
 		}

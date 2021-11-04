@@ -128,7 +128,7 @@ func getBackendConfig(nodeObj *v1.Node) (map[string]string, error) {
 		backendConfig[submv1.NATTDiscoveryPortConfig] = submv1.DefaultNATTDiscoveryPort
 	}
 
-	//TODO: we should allow the cable drivers to capture and expose BackendConfig settings, instead of doing
+	// TODO: we should allow the cable drivers to capture and expose BackendConfig settings, instead of doing
 	//      it here.
 	preferredServerStr := backendConfig[submv1.PreferredServerConfig]
 

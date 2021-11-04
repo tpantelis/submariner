@@ -89,7 +89,6 @@ func NewClusterGlobalEgressIPController(config syncer.ResourceSyncerConfig, loca
 		err := controller.reserveAllocatedIPs(federator, obj, func(reservedIPs []string) error {
 			return controller.programClusterGlobalEgressRules(reservedIPs)
 		})
-
 		if err != nil {
 			return nil, err
 		}

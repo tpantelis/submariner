@@ -189,7 +189,6 @@ func (kp *SyncHandler) reconcileRoutes(vxlanGw net.IP) error {
 	}
 
 	currentRouteList, err := kp.netLink.RouteList(link, syscall.AF_INET)
-
 	if err != nil {
 		return errors.Wrapf(err, "error retrieving routes for link %s", VxLANIface)
 	}
@@ -221,7 +220,6 @@ func (kp *SyncHandler) reconcileRoutes(vxlanGw net.IP) error {
 		found := false
 		for _, curRoute := range currentRouteList {
 			if curRoute.Gw == nil || curRoute.Dst == nil {
-
 			} else if curRoute.Gw.Equal(route.Gw) && curRoute.Dst.String() == route.Dst.String() {
 				klog.V(log.DEBUG).Infof("Found equivalent route, not adding")
 				found = true
