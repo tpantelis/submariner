@@ -86,7 +86,7 @@ const (
 
 var VERSION = "not-compiled-properly"
 
-func main() {
+func main() { // nolint:gocyclo // This function is complicated
 	klog.InitFlags(nil)
 	flag.Parse()
 
@@ -252,6 +252,11 @@ func main() {
 	}()
 
 	<-stopCh
+
+	if err := cableEngine.Cleanup(); err != nil {
+		klog.Errorf("error cleaning up cableEngine resources before removing Gateway")
+	}
+
 	klog.Info("All controllers stopped or exited. Stopping main loop")
 
 	if err := httpServer.Shutdown(context.TODO()); err != nil {
