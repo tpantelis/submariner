@@ -46,12 +46,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog"
+
 	mcsv1a1 "sigs.k8s.io/mcs-api/pkg/apis/v1alpha1"
 )
 
@@ -113,6 +115,10 @@ func newTestDriverBase() *testDriverBase {
 	Expect(mcsv1a1.AddToScheme(t.scheme)).To(Succeed())
 	Expect(submarinerv1.AddToScheme(t.scheme)).To(Succeed())
 	Expect(corev1.AddToScheme(t.scheme)).To(Succeed())
+
+	// TODO: Remove this workaround for https://github.com/kubernetes/client-go/issues/949 once
+	// admiral has been updated
+	t.scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "fake-dynamic-client-group", Version: "v1", Kind: "List"}, &unstructured.UnstructuredList{})
 
 	fakeClient := fakeDynClient.NewDynamicClient(t.scheme)
 	t.dynClient = fakeClient
