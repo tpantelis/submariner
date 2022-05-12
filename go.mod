@@ -30,3 +30,12 @@ require (
 	sigs.k8s.io/controller-runtime v0.11.2
 	sigs.k8s.io/mcs-api v0.1.0
 )
+
+replace (
+	k8s.io/api => k8s.io/api v0.22.9
+	k8s.io/apimachinery => k8s.io/apimachinery v0.22.9
+	k8s.io/client-go => k8s.io/client-go v0.22.9
+	k8s.io/klog/v2 => k8s.io/klog/v2 v2.9.0
+	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.10.3
+	github.com/go-logr/logr => github.com/go-logr/logr v0.4.0
+)
