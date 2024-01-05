@@ -49,8 +49,8 @@ func testEndpointSyncing() {
 
 	Context("on startup", func() {
 		It("should create a new Endpoint locally and sync to the broker", func() {
-			awaitEndpoint(t.localEndpoints, &t.localEndpoint.Spec)
-			awaitEndpoint(t.brokerEndpoints, &t.localEndpoint.Spec)
+			awaitEndpoint(t.localEndpoints, t.localEndpoint)
+			awaitEndpoint(t.brokerEndpoints, t.localEndpoint)
 		})
 
 		When("creation of the local Endpoint fails", func() {
@@ -84,7 +84,7 @@ func testEndpointSyncing() {
 
 	When("a remote Endpoint is created, updated and deleted on the broker", func() {
 		It("should correctly sync the local datastore", func() {
-			awaitEndpoint(t.brokerEndpoints, &t.localEndpoint.Spec)
+			awaitEndpoint(t.brokerEndpoints, t.localEndpoint)
 
 			endpoint := newEndpoint(&submarinerv1.EndpointSpec{
 				CableName: fmt.Sprintf("submariner-cable-%s-10-253-1-2", otherClusterID),
@@ -109,7 +109,7 @@ func testEndpointSyncing() {
 
 	When("a remote Endpoint is synced locally", func() {
 		It("should not try to re-sync to the broker", func() {
-			awaitEndpoint(t.brokerEndpoints, &t.localEndpoint.Spec)
+			awaitEndpoint(t.brokerEndpoints, t.localEndpoint)
 
 			endpoint := newEndpoint(&submarinerv1.EndpointSpec{
 				CableName: fmt.Sprintf("submariner-cable-%s-10-253-1-2", otherClusterID),
@@ -137,27 +137,27 @@ func testEndpointSyncing() {
 		})
 
 		JustBeforeEach(func() {
-			t.localEndpoint.Spec.HealthCheckIP = node.Annotations[constants.SmGlobalIP]
-			awaitEndpoint(t.localEndpoints, &t.localEndpoint.Spec)
+			t.localEndpoint.HealthCheckIP = node.Annotations[constants.SmGlobalIP]
+			awaitEndpoint(t.localEndpoints, t.localEndpoint)
 		})
 
 		It("should update the local Endpoint's HealthCheckIP", func() {
 			node.Annotations[constants.SmGlobalIP] = "200.0.0.100"
-			t.localEndpoint.Spec.HealthCheckIP = node.Annotations[constants.SmGlobalIP]
+			t.localEndpoint.HealthCheckIP = node.Annotations[constants.SmGlobalIP]
 
 			test.UpdateResource(t.localNodes, node)
-			awaitEndpoint(t.localEndpoints, &t.localEndpoint.Spec)
+			awaitEndpoint(t.localEndpoints, t.localEndpoint)
 		})
 
 		Context("but the local Endpoint no longer exists", func() {
 			It("should not recreate the local Endpoint", func() {
-				Expect(t.localEndpoints.Delete(context.Background(), getEndpointName(&t.localEndpoint.Spec), metav1.DeleteOptions{})).
+				Expect(t.localEndpoints.Delete(context.Background(), getEndpointName(t.localEndpoint), metav1.DeleteOptions{})).
 					To(Succeed())
 
 				node.Annotations[constants.SmGlobalIP] = "200.0.0.100"
 				test.UpdateResource(t.localNodes, node)
 
-				testutil.EnsureNoResource(resource.ForDynamic(t.localEndpoints), getEndpointName(&t.localEndpoint.Spec))
+				testutil.EnsureNoResource(resource.ForDynamic(t.localEndpoints), getEndpointName(t.localEndpoint))
 			})
 		})
 	})
@@ -202,19 +202,19 @@ func testEndpointExclusivity() {
 			})
 
 			It("should ignore it", func() {
-				awaitEndpoint(t.brokerEndpoints, &t.localEndpoint.Spec)
+				awaitEndpoint(t.brokerEndpoints, t.localEndpoint)
 			})
 		})
 	})
 
 	When("an Endpoint initially exists that matches the local Endpoint", func() {
 		BeforeEach(func() {
-			test.CreateResource(t.localEndpoints, newEndpoint(&t.localEndpoint.Spec))
+			test.CreateResource(t.localEndpoints, newEndpoint(t.localEndpoint))
 		})
 
 		It("should not delete it", func() {
 			time.Sleep(500 * time.Millisecond)
-			awaitEndpoint(t.localEndpoints, &t.localEndpoint.Spec)
+			awaitEndpoint(t.localEndpoints, t.localEndpoint)
 		})
 	})
 
@@ -230,7 +230,7 @@ func testEndpointExclusivity() {
 
 		It("should not delete it", func() {
 			time.Sleep(500 * time.Millisecond)
-			awaitEndpoint(t.localEndpoints, &t.localEndpoint.Spec)
+			awaitEndpoint(t.localEndpoints, t.localEndpoint)
 		})
 	})
 }
