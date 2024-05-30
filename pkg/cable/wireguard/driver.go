@@ -29,6 +29,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
 	"github.com/submariner-io/admiral/pkg/log"
+	"github.com/submariner-io/admiral/pkg/resource"
 	v1 "github.com/submariner-io/submariner/pkg/apis/submariner.io/v1"
 	"github.com/submariner-io/submariner/pkg/cable"
 	"github.com/submariner-io/submariner/pkg/natdiscovery"
@@ -256,7 +257,7 @@ func (w *wireguard) ConnectToEndpoint(endpointInfo *natdiscovery.NATEndpointInfo
 	// create connection, overwrite existing connection
 	connection := v1.NewConnection(&remoteEndpoint.Spec, ip, endpointInfo.UseNAT)
 	connection.SetStatus(v1.Connecting, "Connection has been created but not yet started")
-	logger.V(log.DEBUG).Infof("Adding connection for cluster %s, %v", remoteEndpoint.Spec.ClusterID, connection)
+	logger.V(log.DEBUG).Infof("Adding connection for cluster %s: %s", remoteEndpoint.Spec.ClusterID, resource.ToJSON(remoteEndpoint))
 	w.connections[remoteEndpoint.Spec.ClusterID] = connection
 
 	port, err := remoteEndpoint.Spec.GetBackendPort(v1.UDPPortConfig, int32(w.spec.NATTPort))

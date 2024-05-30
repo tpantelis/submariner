@@ -22,6 +22,7 @@ import (
 	"net"
 
 	"github.com/pkg/errors"
+	"github.com/submariner-io/admiral/pkg/resource"
 	submV1 "github.com/submariner-io/submariner/pkg/apis/submariner.io/v1"
 	"github.com/submariner-io/submariner/pkg/cidr"
 	"github.com/submariner-io/submariner/pkg/vxlan"
@@ -102,6 +103,8 @@ func (kp *SyncHandler) RemoteEndpointCreated(endpoint *submV1.Endpoint) error {
 		gwIP := endpoint.GatewayIP()
 		kp.remoteSubnetGw[inputCidrBlock] = gwIP
 	}
+
+	logger.Infof("*****RemoteEndpointCreated: %s", resource.ToJSON(endpoint))
 
 	if err := kp.updateRoutingRulesForInterClusterSupport(endpoint.Spec.Subnets, Add); err != nil {
 		logger.Errorf(err, "updateRoutingRulesForInterClusterSupport for new remote %#v returned error",
