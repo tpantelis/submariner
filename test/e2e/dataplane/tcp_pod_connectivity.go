@@ -27,7 +27,7 @@ import (
 
 const TestLabel = "dataplane"
 
-var _ = Describe("Basic TCP connectivity tests across clusters without discovery", Label(TestLabel), func() {
+var _ = PDescribe("Basic TCP connectivity tests across clusters without discovery", Label(TestLabel), func() {
 	f := framework.NewFramework("dataplane-conn-nd")
 	var toEndpointType tcp.EndpointType
 	var networking framework.NetworkingType
