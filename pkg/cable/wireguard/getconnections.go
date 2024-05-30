@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/submariner-io/admiral/pkg/resource"
 	v1 "github.com/submariner-io/submariner/pkg/apis/submariner.io/v1"
 	"github.com/submariner-io/submariner/pkg/cable"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
@@ -40,8 +41,11 @@ func (w *wireguard) GetConnections() ([]v1.Connection, error) {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
+	logger.Infof("***GetConnections....")
+
 	for i := range d.Peers {
 		key := d.Peers[i].PublicKey
+		logger.Infof("   found: %s", resource.ToJSON(&d.Peers[i]))
 
 		connection, err := w.connectionByKey(&key)
 		if err != nil {

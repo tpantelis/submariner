@@ -25,6 +25,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/submariner-io/admiral/pkg/log"
+	"github.com/submariner-io/admiral/pkg/resource"
 	v1 "github.com/submariner-io/submariner/pkg/apis/submariner.io/v1"
 	"github.com/submariner-io/submariner/pkg/cable"
 	submendpoint "github.com/submariner-io/submariner/pkg/endpoint"
@@ -184,7 +185,7 @@ func (i *engine) installCableWithNATInfo(rnat *natdiscovery.NATEndpointInfo) err
 
 		prevTimestamp := i.installedCables[active.Endpoint.CableName]
 
-		logger.V(log.TRACE).Infof("Found a pre-existing cable %q with timestamp %q that belongs to this cluster %s",
+		logger.Infof("Found a pre-existing cable %q with timestamp %q that belongs to this cluster %s",
 			active.Endpoint.CableName, prevTimestamp, endpoint.Spec.ClusterID)
 
 		if endpoint.CreationTimestamp.Before(&prevTimestamp) {
@@ -198,17 +199,17 @@ func (i *engine) installCableWithNATInfo(rnat *natdiscovery.NATEndpointInfo) err
 			// config has changed.
 			if active.UsingIP == rnat.UseIP && active.UsingNAT == rnat.UseNAT &&
 				reflect.DeepEqual(active.Endpoint.BackendConfig, endpoint.Spec.BackendConfig) {
-				logger.V(log.TRACE).Infof("Connection info (IP: %s, NAT: %v, BackendConfig: %v) for cable %q is unchanged"+
+				logger.Infof("Connection info (IP: %s, NAT: %v, BackendConfig: %v) for cable %q is unchanged"+
 					" - not re-installing", active.UsingIP, active.UsingNAT, active.Endpoint.BackendConfig, active.Endpoint.CableName)
 				return nil
 			}
 
-			logger.V(log.DEBUG).Infof("New connection info (IP: %s, NAT: %v, BackendConfig: %v) for cable %q differs from"+
+			logger.Infof("New connection info (IP: %s, NAT: %v, BackendConfig: %v) for cable %q differs from"+
 				" previous (IP: %s, NAT: %v, BackendConfig: %v) - re-installing", rnat.UseIP, rnat.UseNAT, active.Endpoint.BackendConfig,
 				active.Endpoint.CableName, active.UsingIP, active.UsingNAT, endpoint.Spec.BackendConfig)
 		}
 
-		logger.V(log.DEBUG).Infof("Disconnecting pre-existing cable %q", active.Endpoint.CableName)
+		logger.Infof("Disconnecting pre-existing cable %q", active.Endpoint.CableName)
 
 		err = i.driver.DisconnectFromEndpoint(&types.SubmarinerEndpoint{Spec: active.Endpoint})
 		if err != nil {
@@ -256,7 +257,7 @@ func (i *engine) RemoveCable(endpoint *v1.Endpoint) error {
 		return nil
 	}
 
-	logger.Infof("Removing Endpoint cable %q", endpoint.Spec.CableName)
+	logger.Infof("Removing Endpoint cable: %s", resource.ToJSON(endpoint))
 
 	i.natDiscovery.RemoveEndpoint(endpoint.Spec.CableName)
 
