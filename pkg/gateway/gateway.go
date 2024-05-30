@@ -24,6 +24,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
@@ -280,7 +281,19 @@ func (g *gatewayType) onStartedLeading(ctx context.Context) {
 	}
 
 	g.runAsync(g.leaderComponentsStarted, func() {
-		g.updateGatewayHAStatus(ctx, subv1.HAStatusActive)
+		msgLogged := atomic.Bool{}
+
+		_ = wait.PollUntilContextCancel(ctx, 100*time.Millisecond, true, func(ctx context.Context) (bool, error) {
+			if err := g.gatewayPod.SetHALabels(ctx, subv1.HAStatusActive); err != nil {
+				if msgLogged.CompareAndSwap(false, true) {
+					logger.Warningf("Error updating pod label to active: %s", err)
+				}
+
+				return false, nil
+			}
+
+			return true, nil
+		})
 	})
 
 	g.runAsync(g.leaderComponentsStarted, func() {
@@ -330,7 +343,15 @@ func (g *gatewayType) onStoppedLeading() {
 
 	ctx := context.Background()
 
-	g.updateGatewayHAStatus(ctx, subv1.HAStatusPassive)
+	if err := wait.PollUntilContextCancel(ctx, 100*time.Millisecond, true, func(ctx context.Context) (bool, error) {
+		if g.gatewayPod.SetHALabels(ctx, subv1.HAStatusPassive) != nil {
+			return false, nil //nolint:nilerr // keep trying
+		}
+
+		return true, nil
+	}); err != nil {
+		logger.Errorf(err, "Failed updating pod label to passive: %s", err)
+	}
 
 	err := g.startLeaderElection(ctx)
 	if err != nil {
