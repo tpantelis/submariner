@@ -100,6 +100,9 @@ bin/lichen:
 $(TARGETS):
 	./scripts/$@
 
+clusters:
+	./clusters.sh
+
 .PHONY: $(TARGETS) build licensecheck
 
 # Not running in Dapper
