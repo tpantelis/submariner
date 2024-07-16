@@ -28,12 +28,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/submariner-io/admiral/pkg/federate"
 	"github.com/submariner-io/admiral/pkg/log"
+	"github.com/submariner-io/admiral/pkg/resource"
 	"github.com/submariner-io/admiral/pkg/syncer"
 	subv1 "github.com/submariner-io/submariner/pkg/apis/submariner.io/v1"
 	"github.com/submariner-io/submariner/pkg/event"
 	k8sv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -202,6 +204,14 @@ func (c *Controller) setupHandlerController(handler event.Handler, clusterID, ho
 		return nil, false
 	}
 
+	syncerConfig.ShouldProcess = func(obj *unstructured.Unstructured, op syncer.Operation) bool {
+		if handler.GetName() == "kubeproxy-iptables-handler" {
+			logger.Infof("***IN ShouldProcess (%s) %s for: %s", handler.GetName(), op, resource.ToJSON(obj))
+		}
+
+		return true
+	}
+
 	endpointSyncer, err := syncer.NewResourceSyncerWithSharedInformer(&syncerConfig, c.endpointInformer)
 	if err != nil {
 		return errors.Wrap(err, "error creating resource syncer")
@@ -213,6 +223,7 @@ func (c *Controller) setupHandlerController(handler event.Handler, clusterID, ho
 
 	hCtrl.nodeHandler, ok = hCtrl.handler.(event.NodeHandler)
 	if ok {
+		syncerConfig.ShouldProcess = nil
 		syncerConfig.Name = fmt.Sprintf("Node watcher for handler %q", handler.GetName())
 		syncerConfig.ResourceType = &k8sv1.Node{}
 		syncerConfig.SourceNamespace = k8sv1.NamespaceAll

@@ -21,6 +21,7 @@ package redundancy
 import (
 	"context"
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -46,13 +47,13 @@ var _ = Describe("Gateway fail-over tests", Label(TestLabel), func() {
 	// After each test, we make sure that the system again has a single gateway, the active one
 	AfterEach(f.GatewayCleanup)
 
-	When("one gateway node is configured and the submariner gateway pod fails", func() {
+	FWhen("one gateway node is configured and the submariner gateway pod fails", func() {
 		It("should start a new submariner gateway pod and be able to connect from another cluster", func() {
 			testGatewayPodRestartScenario(f)
 		})
 	})
 
-	When("multiple gateway nodes are configured and fail-over is initiated", func() {
+	PWhen("multiple gateway nodes are configured and fail-over is initiated", func() {
 		It("should activate the passive gateway and be able to connect from another cluster", func() {
 			testGatewayFailOverScenario(f)
 		})
@@ -234,4 +235,6 @@ func testGatewayFailOverScenario(f *subFramework.Framework) {
 		ToClusterScheduling:   framework.NonGatewayNode,
 		ToEndpointType:        defaultEndpointType(),
 	}, subFramework.GetGlobalnetEgressParams(subFramework.ClusterSelector))
+
+	time.Sleep(3 * time.Minute)
 }

@@ -48,6 +48,8 @@ func (c *handlerController) handleCreatedEndpoint(endpoint *smv1.Endpoint, reque
 }
 
 func (c *handlerController) handleCreatedLocalEndpoint(endpoint *smv1.Endpoint) error {
+	//logger.Infof("***IN handleCreatedLocalEndpoint: %s", resource.ToJSON(endpoint))
+
 	if endpoint.Spec.Hostname == c.hostname {
 		c.handlerState.setIsOnGateway(true)
 	}

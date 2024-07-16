@@ -27,6 +27,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/submariner-io/admiral/pkg/log"
+	"github.com/submariner-io/admiral/pkg/resource"
 	v1 "github.com/submariner-io/submariner/pkg/apis/submariner.io/v1"
 	"github.com/submariner-io/submariner/pkg/cable"
 	"github.com/submariner-io/submariner/pkg/cni"
@@ -149,6 +150,8 @@ func (v *vxLan) ConnectToEndpoint(endpointInfo *natdiscovery.NATEndpointInfo) (s
 		logger.V(log.DEBUG).Infof("Will not connect to self")
 		return "", nil
 	}
+
+	logger.Infof("**IN VxLan ConnectToEndpoint: %s", resource.ToJSON(&remoteEndpoint.Spec))
 
 	remoteIP := net.ParseIP(endpointInfo.UseIP)
 	if remoteIP == nil {

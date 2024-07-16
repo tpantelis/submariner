@@ -23,9 +23,12 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/submariner-io/admiral/pkg/log"
+	"github.com/submariner-io/admiral/pkg/resource"
+	"github.com/submariner-io/admiral/pkg/syncer"
 	"github.com/submariner-io/admiral/pkg/watcher"
 	v1 "github.com/submariner-io/submariner/pkg/apis/submariner.io/v1"
 	"github.com/submariner-io/submariner/pkg/cableengine"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -51,6 +54,10 @@ func StartController(engine cableengine.Engine, namespace string, config *watche
 				OnDeleteFunc: c.handleRemovedEndpoint,
 			},
 			SourceNamespace: namespace,
+			ShouldProcess: func(obj *unstructured.Unstructured, op syncer.Operation) bool {
+				logger.Infof("***IN Tunnel Controller ShouldProcess %s for: %s", op, resource.ToJSON(obj))
+				return true
+			},
 		},
 	}
 
@@ -74,7 +81,8 @@ func StartController(engine cableengine.Engine, namespace string, config *watche
 func (c *controller) handleCreatedOrUpdatedEndpoint(obj runtime.Object, _ int) bool {
 	endpoint := obj.(*v1.Endpoint)
 
-	logger.V(log.TRACE).Infof("Tunnel controller processing added or updated submariner Endpoint object: %#v", endpoint)
+	logger.Infof("Tunnel controller processing added or updated submariner Endpoint object: %s",
+		resource.ToJSON(endpoint))
 
 	err := c.engine.InstallCable(endpoint)
 	if err != nil {
@@ -88,7 +96,8 @@ func (c *controller) handleCreatedOrUpdatedEndpoint(obj runtime.Object, _ int) b
 func (c *controller) handleRemovedEndpoint(obj runtime.Object, _ int) bool {
 	endpoint := obj.(*v1.Endpoint)
 
-	logger.V(log.DEBUG).Infof("Tunnel controller processing removed submariner Endpoint object: %#v", endpoint)
+	logger.V(log.DEBUG).Infof("Tunnel controller processing removed submariner Endpoint object: %s",
+		resource.ToJSON(endpoint))
 
 	if err := c.engine.RemoveCable(endpoint); err != nil {
 		logger.Errorf(err, "Tunnel controller failed to remove Endpoint cable %#v from the engine", endpoint)

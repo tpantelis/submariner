@@ -19,6 +19,7 @@ limitations under the License.
 package controller
 
 import (
+	"github.com/submariner-io/admiral/pkg/resource"
 	smv1 "github.com/submariner-io/submariner/pkg/apis/submariner.io/v1"
 )
 
@@ -47,6 +48,8 @@ func (c *handlerController) handleRemovedEndpoint(endpoint *smv1.Endpoint, reque
 }
 
 func (c *handlerController) handleRemovedLocalEndpoint(endpoint *smv1.Endpoint) error {
+	logger.Infof("***IN handleRemovedLocalEndpoint: %s", resource.ToJSON(endpoint))
+
 	if endpoint.Spec.Hostname == c.hostname {
 		c.handlerState.setIsOnGateway(false)
 	}

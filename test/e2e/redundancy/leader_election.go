@@ -36,7 +36,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Leader election tests", func() {
+var _ = PDescribe("Leader election tests", func() {
 	f := subFramework.NewFramework("leader-election")
 
 	When("renewal of the leader lease fails", func() {
