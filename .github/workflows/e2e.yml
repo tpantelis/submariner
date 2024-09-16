@@ -32,7 +32,7 @@ jobs:
         uses: submariner-io/shipyard/gh-actions/e2e@devel
 
       - name: Post mortem
-        if: failure()
+        if: always()
         uses: submariner-io/shipyard/gh-actions/post-mortem@devel
 
   e2e-full:
