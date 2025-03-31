@@ -27,6 +27,7 @@ import (
 	"github.com/submariner-io/admiral/pkg/log"
 	"github.com/submariner-io/admiral/pkg/log/kzerolog"
 	"github.com/submariner-io/admiral/pkg/names"
+	"github.com/submariner-io/admiral/pkg/resource"
 	"github.com/submariner-io/admiral/pkg/syncer/broker"
 	"github.com/submariner-io/admiral/pkg/util"
 	admversion "github.com/submariner-io/admiral/pkg/version"
@@ -91,7 +92,7 @@ func main() {
 	submSpec := types.SubmarinerSpecification{}
 	logger.FatalOnError(envconfig.Process("submariner", &submSpec), "Error processing env vars")
 
-	logger.Infof("Parsed env variables: %#v", submSpec)
+	logger.Infof("Parsed env variables: %s", resource.ToJSON(submSpec))
 
 	proxyEnv := httpproxy.FromEnvironment()
 	logger.Infof("Proxy env variables: HTTP_PROXY: %v, HTTPS_PROXY: %v, NO_PROXY: %v",
