@@ -15,7 +15,7 @@ require (
 	github.com/prometheus-community/pro-bing v0.6.1
 	github.com/prometheus/client_golang v1.21.1
 	github.com/submariner-io/admiral v0.21.0-m0.0.20250319174843-be32dc00380f
-	github.com/submariner-io/shipyard v0.21.0-m0.0.20250408124606-2dad3719a2a1
+	github.com/submariner-io/shipyard v0.21.0-m0.0.20250409105533-d91ce998194a
 	github.com/vishvananda/netlink v1.3.0
 	golang.org/x/net v0.38.0
 	golang.org/x/sys v0.32.0
@@ -83,7 +83,7 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
-	golang.org/x/oauth2 v0.24.0 // indirect
+	golang.org/x/oauth2 v0.27.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/term v0.30.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
