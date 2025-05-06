@@ -19,6 +19,8 @@ limitations under the License.
 package iptables
 
 import (
+	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/coreos/go-iptables/iptables"
@@ -82,6 +84,19 @@ type packetFilter struct {
 }
 
 func New(family k8snet.IPFamily) (packetfilter.Driver, error) {
+	logger.Infof("***PF NEW: %s", os.Getenv("PATH"))
+
+	ls := func(s string) {
+		cmd := exec.Command("ls", "-la", s)
+		var out strings.Builder
+		cmd.Stdout = &out
+		cmd.Run()
+		logger.Infof("\nLS %s: \n%s", cmd.Path, out.String())
+	}
+
+	ls("/usr/sbin/")
+	ls("/etc/alternatives")
+
 	proto := protocolByFamily[family]
 
 	ipt, err := iptables.New(iptables.IPFamily(proto), iptables.Timeout(5))
