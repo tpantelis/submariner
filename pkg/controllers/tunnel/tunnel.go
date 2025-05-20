@@ -23,6 +23,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/submariner-io/admiral/pkg/log"
+	"github.com/submariner-io/admiral/pkg/resource"
 	"github.com/submariner-io/admiral/pkg/slices"
 	"github.com/submariner-io/admiral/pkg/watcher"
 	v1 "github.com/submariner-io/submariner/pkg/apis/submariner.io/v1"
@@ -85,9 +86,11 @@ func StartController(engine cableengine.Engine, namespace string, config *watche
 func (c *controller) handleCreatedOrUpdatedEndpoint(obj runtime.Object, _ int) bool {
 	endpoint := obj.(*v1.Endpoint)
 
-	logger.V(log.TRACE).Infof("Tunnel controller processing added or updated submariner Endpoint object: %#v", endpoint)
+	logger.Infof("Tunnel controller processing added or updated submariner Endpoint object: %s", resource.ToJSON(endpoint))
 
 	commonIPFamilies := findCommonIPFamilies(c.localIPFamilies, endpoint.Spec.GetIPFamilies())
+
+	logger.Infof("***localIPFamilies: %v, epFamilies: %v, commonIPFamilies: %v", c.localIPFamilies, endpoint.Spec.GetIPFamilies(), commonIPFamilies)
 
 	var errs []error
 

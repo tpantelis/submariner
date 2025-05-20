@@ -134,6 +134,8 @@ func (nd *natDiscovery) AddEndpoint(endPoint *v1.Endpoint, family k8snet.IPFamil
 	nd.Lock()
 	defer nd.Unlock()
 
+	logger.Infof("NAT AddEndpoint for IPv%s endpoint %q", family, endPoint.Spec.CableName)
+
 	if ep, exists := nd.remoteEndpoints[endPoint.Spec.GetFamilyCableName(family)]; exists {
 		if reflect.DeepEqual(ep.endpoint.Spec, endPoint.Spec) {
 			if ep.isDiscoveryComplete() {
@@ -159,7 +161,7 @@ func (nd *natDiscovery) AddEndpoint(endPoint *v1.Endpoint, family k8snet.IPFamil
 		remoteNAT.useLegacyNATSettings()
 		nd.readyChannel <- remoteNAT.toNATEndpointInfo()
 	} else {
-		logger.Infof("Starting NAT discovery for endpoint %q", endPoint.Spec.CableName)
+		logger.Infof("Starting IPv%s NAT discovery for endpoint %q", family, endPoint.Spec.CableName)
 	}
 
 	nd.remoteEndpoints[endPoint.Spec.GetFamilyCableName(family)] = remoteNAT
