@@ -48,6 +48,7 @@ dockertogoarch = $(patsubst arm/v7,arm,$(1))
 # Targets to make
 
 deploy: images
+	./scripts/deploy.sh
 
 golangci-lint: pkg/natdiscovery/proto/natdiscovery.pb.go
 

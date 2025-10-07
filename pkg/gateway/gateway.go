@@ -287,6 +287,7 @@ func (g *gatewayType) onStartedLeading(ctx context.Context) {
 	logger.Info("Leadership acquired - starting controllers")
 
 	if g.SigningRequestor == nil {
+		logger.Info("*****StartSigningRequestor")
 		signingRequestor, err := certificate.StartSigningRequestor(broker.SyncerConfig{
 			LocalRestConfig: g.SyncerConfig.LocalRestConfig,
 			LocalClient:     g.SyncerConfig.LocalClient,
@@ -295,6 +296,7 @@ func (g *gatewayType) onStartedLeading(ctx context.Context) {
 		}, ctx.Done())
 
 		logger.FatalOnError(err, "Error creating SigningRequestor")
+		logger.Info("*****Successfully started SigningRequestor")
 
 		g.SigningRequestor = signingRequestor
 	}

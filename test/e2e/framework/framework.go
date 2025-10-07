@@ -60,6 +60,37 @@ func beforeSuite() {
 	framework.DetectGlobalnet()
 	err = framework.InitNumClusterNodes()
 	Expect(err).ToNot(HaveOccurred())
+
+	//framework.By("****Creating GW role binding")
+	//
+	//_, err = framework.KubeClients[0].RbacV1().RoleBindings("submariner-k8s-broker").Create(context.TODO(), &rbacv1.RoleBinding{
+	//	ObjectMeta: metav1.ObjectMeta{
+	//		Name: "submariner-gateway-certs",
+	//	},
+	//	Subjects: []rbacv1.Subject{
+	//		{
+	//			Kind:      "ServiceAccount",
+	//			Name:      "submariner-gateway",
+	//			Namespace: "submariner-operator",
+	//		},
+	//	},
+	//	RoleRef: rbacv1.RoleRef{
+	//		APIGroup: "rbac.authorization.k8s.io",
+	//		Kind:     "Role",
+	//		Name:     "submariner-certs-role",
+	//	},
+	//}, metav1.CreateOptions{})
+	//Expect(err).ToNot(HaveOccurred())
+	//
+	//for _, clientSet := range framework.KubeClients {
+	//	err = clientSet.CoreV1().Pods("submariner-operator").DeleteCollection(context.TODO(), metav1.DeleteOptions{},
+	//		metav1.ListOptions{
+	//			LabelSelector: k8slabels.SelectorFromSet(map[string]string{
+	//				"app": "submariner-gateway",
+	//			}).String(),
+	//		})
+	//	Expect(err).ToNot(HaveOccurred())
+	//}
 }
 
 func (f *Framework) GetGatewayInformer(cluster framework.ClusterIndex) (cache.SharedIndexInformer, chan struct{}) {
