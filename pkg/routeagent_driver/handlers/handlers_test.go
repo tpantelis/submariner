@@ -138,7 +138,14 @@ var _ = Describe("", func() {
 			},
 			HealthCheckerEnabled:     false,
 			RouteAgentUpdateInterval: time.Hour,
-		}, submClient.SubmarinerV1().RouteAgents(testing.Namespace), "v1", "test-node")
+			LocalNodeName:            "test-node",
+			Version:                  "v1",
+			RouteAgentOwner: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "owner",
+				},
+			},
+		}, submClient.SubmarinerV1().RouteAgents(testing.Namespace))
 		Expect(healthCheckerHandler.Init(ctx)).To(Succeed())
 	})
 })
